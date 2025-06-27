@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"noversystem/pkg/controller"
+	"noversystem/pkg/controllers"
 	"noversystem/pkg/dao"
 
 	"github.com/gofiber/fiber/v2"
@@ -13,13 +13,20 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool) {
 	app.Use(logger.New())
 
 	api := app.Group("/api")
-	
-    // Inisialisasi DAO dan Controller
-	userDAO := dao.NewUserDao(db)
-	authController := controller.NewAuthController(userDAO)
 
-	// Grup rute untuk otentikasi
-	auth := api.Group("/auth")
-	auth.Post("/register", authController.Register)
-	auth.Post("/login", authController.Login)
+	userDAO := dao.NewUserDao(db)
+
+	// --- Auth Routes ---
+	authController := controllers.NewAuthController(userDAO)
+	authGroup := api.Group("/auth")
+	authGroup.Post("/register", authController.Register)
+	authGroup.Post("/login", authController.Login)
+
+	// --- API v1 Group ---
+	apiV1 := api.Group("/v1")
+
+	// --- Bank Routes ---
+	bankController := controllers.NewBankController(db)
+	bankGroup := apiV1.Group("/bank")
+	bankGroup.Get("/get", bankController.GetBankList)
 }

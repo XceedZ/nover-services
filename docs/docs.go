@@ -25,7 +25,7 @@ const docTemplate = `{
     "paths": {
         "/auth/login": {
             "post": {
-                "description": "Mengotentikasi pengguna dengan email dan password, lalu memberikan JWT.",
+                "description": "Mengotentikasi pengguna dengan username dan password, lalu memberikan JWT.",
                 "consumes": [
                     "application/json"
                 ],
@@ -38,12 +38,12 @@ const docTemplate = `{
                 "summary": "Login pengguna",
                 "parameters": [
                     {
-                        "description": "Kredensial Login",
+                        "description": "Kredensial Login dengan Username",
                         "name": "login",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/controller.LoginRequest"
+                            "$ref": "#/definitions/controllers.LoginRequest"
                         }
                     }
                 ],
@@ -51,25 +51,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.LoginResponse"
+                            "$ref": "#/definitions/controllers.LoginSuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Input tidak valid",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorResponse"
+                            "$ref": "#/definitions/controllers.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Kredensial tidak valid",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorResponse"
+                            "$ref": "#/definitions/controllers.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Error internal server",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorResponse"
+                            "$ref": "#/definitions/controllers.ErrorResponse"
                         }
                     }
                 }
@@ -77,7 +77,7 @@ const docTemplate = `{
         },
         "/auth/register": {
             "post": {
-                "description": "Membuat akun pengguna baru dengan email dan password.",
+                "description": "Membuat akun pengguna baru dengan email, username, dan password.",
                 "consumes": [
                     "application/json"
                 ],
@@ -109,19 +109,51 @@ const docTemplate = `{
                     "400": {
                         "description": "Input tidak valid",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorResponse"
+                            "$ref": "#/definitions/controllers.ErrorResponse"
                         }
                     },
                     "409": {
-                        "description": "Email sudah terdaftar",
+                        "description": "Email atau Username sudah terdaftar",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorResponse"
+                            "$ref": "#/definitions/controllers.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Error internal server",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorResponse"
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/bank/get": {
+            "get": {
+                "description": "Mengambil daftar semua bank yang aktif, diurutkan berdasarkan nama.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bank"
+                ],
+                "summary": "Daftar Bank",
+                "responses": {
+                    "200": {
+                        "description": "Daftar bank yang berhasil diambil",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/controllers.BankResponse"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Terjadi kesalahan internal pada server",
+                        "schema": {
+                            "$ref": "#/definitions/fiber.Map"
                         }
                     }
                 }
@@ -129,16 +161,32 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "controller.ErrorResponse": {
+        "controllers.BankResponse": {
             "type": "object",
             "properties": {
-                "error": {
-                    "type": "string",
-                    "example": "Invalid credentials"
+                "bank_code": {
+                    "type": "string"
+                },
+                "bank_id": {
+                    "type": "integer"
+                },
+                "bank_name": {
+                    "type": "string"
                 }
             }
         },
-        "controller.LoginRequest": {
+        "controllers.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.LoginRequest": {
             "type": "object",
             "properties": {
                 "password": {
@@ -151,24 +199,32 @@ const docTemplate = `{
                 }
             }
         },
-        "controller.LoginResponse": {
+        "controllers.LoginSuccessResponse": {
             "type": "object",
             "properties": {
-                "message": {
-                    "type": "string",
-                    "example": "Login successful"
-                },
                 "token": {
-                    "type": "string",
-                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/tables.User"
                 }
             }
+        },
+        "fiber.Map": {
+            "type": "object",
+            "additionalProperties": true
         },
         "tables.User": {
             "type": "object",
             "properties": {
+                "account_number": {
+                    "type": "string"
+                },
                 "avatar_url": {
                     "type": "string"
+                },
+                "bank_id": {
+                    "type": "integer"
                 },
                 "create_datetime": {
                     "type": "string"
@@ -176,7 +232,13 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
+                "flg_author": {
+                    "type": "string"
+                },
                 "full_name": {
+                    "type": "string"
+                },
+                "instagram": {
                     "type": "string"
                 },
                 "is_email_verified": {
@@ -186,6 +248,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "password": {
+                    "type": "string"
+                },
+                "phone": {
                     "type": "string"
                 },
                 "update_datetime": {

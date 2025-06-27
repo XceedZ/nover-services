@@ -1,9 +1,9 @@
-package controller
+package controllers
 
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"noversystem/pkg/constants" // <-- IMPORT KONSTANTA ERROR
+	"noversystem/pkg/constants"
 	"noversystem/pkg/dao"
 	"noversystem/pkg/tables"
 	"os"
@@ -14,7 +14,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// ErrorResponse diubah untuk menyertakan 'code' dan 'message'
 type ErrorResponse struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
@@ -88,7 +87,7 @@ func (c *AuthController) Register(ctx *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param login body LoginRequest true "Kredensial Login dengan Username"
-// @Success 200 {object} LoginResponse
+// @Success 200 {object} LoginSuccessResponse
 // @Failure 400 {object} ErrorResponse "Input tidak valid"
 // @Failure 401 {object} ErrorResponse "Kredensial tidak valid"
 // @Failure 500 {object} ErrorResponse "Error internal server"

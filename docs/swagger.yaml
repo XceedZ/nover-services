@@ -1,12 +1,22 @@
 basePath: /api
 definitions:
-  controller.ErrorResponse:
+  controllers.BankResponse:
     properties:
-      error:
-        example: Invalid credentials
+      bank_code:
+        type: string
+      bank_id:
+        type: integer
+      bank_name:
         type: string
     type: object
-  controller.LoginRequest:
+  controllers.ErrorResponse:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  controllers.LoginRequest:
     properties:
       password:
         example: password123
@@ -15,30 +25,41 @@ definitions:
         example: testuser
         type: string
     type: object
-  controller.LoginResponse:
+  controllers.LoginSuccessResponse:
     properties:
-      message:
-        example: Login successful
-        type: string
       token:
-        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         type: string
+      user:
+        $ref: '#/definitions/tables.User'
+    type: object
+  fiber.Map:
+    additionalProperties: true
     type: object
   tables.User:
     properties:
+      account_number:
+        type: string
       avatar_url:
         type: string
+      bank_id:
+        type: integer
       create_datetime:
         type: string
       email:
         type: string
+      flg_author:
+        type: string
       full_name:
+        type: string
+      instagram:
         type: string
       is_email_verified:
         type: boolean
       login_with:
         type: string
       password:
+        type: string
+      phone:
         type: string
       update_datetime:
         type: string
@@ -66,34 +87,34 @@ paths:
     post:
       consumes:
       - application/json
-      description: Mengotentikasi pengguna dengan email dan password, lalu memberikan
+      description: Mengotentikasi pengguna dengan username dan password, lalu memberikan
         JWT.
       parameters:
-      - description: Kredensial Login
+      - description: Kredensial Login dengan Username
         in: body
         name: login
         required: true
         schema:
-          $ref: '#/definitions/controller.LoginRequest'
+          $ref: '#/definitions/controllers.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.LoginResponse'
+            $ref: '#/definitions/controllers.LoginSuccessResponse'
         "400":
           description: Input tidak valid
           schema:
-            $ref: '#/definitions/controller.ErrorResponse'
+            $ref: '#/definitions/controllers.ErrorResponse'
         "401":
           description: Kredensial tidak valid
           schema:
-            $ref: '#/definitions/controller.ErrorResponse'
+            $ref: '#/definitions/controllers.ErrorResponse'
         "500":
           description: Error internal server
           schema:
-            $ref: '#/definitions/controller.ErrorResponse'
+            $ref: '#/definitions/controllers.ErrorResponse'
       summary: Login pengguna
       tags:
       - Authentication
@@ -101,7 +122,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Membuat akun pengguna baru dengan email dan password.
+      description: Membuat akun pengguna baru dengan email, username, dan password.
       parameters:
       - description: Informasi Registrasi Pengguna
         in: body
@@ -119,16 +140,37 @@ paths:
         "400":
           description: Input tidak valid
           schema:
-            $ref: '#/definitions/controller.ErrorResponse'
+            $ref: '#/definitions/controllers.ErrorResponse'
         "409":
-          description: Email sudah terdaftar
+          description: Email atau Username sudah terdaftar
           schema:
-            $ref: '#/definitions/controller.ErrorResponse'
+            $ref: '#/definitions/controllers.ErrorResponse'
         "500":
           description: Error internal server
           schema:
-            $ref: '#/definitions/controller.ErrorResponse'
+            $ref: '#/definitions/controllers.ErrorResponse'
       summary: Registrasi pengguna baru
       tags:
       - Authentication
+  /v1/bank/get:
+    get:
+      consumes:
+      - application/json
+      description: Mengambil daftar semua bank yang aktif, diurutkan berdasarkan nama.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Daftar bank yang berhasil diambil
+          schema:
+            items:
+              $ref: '#/definitions/controllers.BankResponse'
+            type: array
+        "500":
+          description: Terjadi kesalahan internal pada server
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      summary: Daftar Bank
+      tags:
+      - Bank
 swagger: "2.0"
