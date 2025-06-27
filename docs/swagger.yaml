@@ -1,0 +1,134 @@
+basePath: /api
+definitions:
+  controller.ErrorResponse:
+    properties:
+      error:
+        example: Invalid credentials
+        type: string
+    type: object
+  controller.LoginRequest:
+    properties:
+      password:
+        example: password123
+        type: string
+      username:
+        example: testuser
+        type: string
+    type: object
+  controller.LoginResponse:
+    properties:
+      message:
+        example: Login successful
+        type: string
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  tables.User:
+    properties:
+      avatar_url:
+        type: string
+      create_datetime:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      is_email_verified:
+        type: boolean
+      login_with:
+        type: string
+      password:
+        type: string
+      update_datetime:
+        type: string
+      user_code:
+        type: string
+      user_id:
+        type: integer
+      username:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@noversystem.dev
+    name: API Support
+  description: Ini adalah dokumentasi API untuk Nover System.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Nover System API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Mengotentikasi pengguna dengan email dan password, lalu memberikan
+        JWT.
+      parameters:
+      - description: Kredensial Login
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/controller.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.LoginResponse'
+        "400":
+          description: Input tidak valid
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+        "401":
+          description: Kredensial tidak valid
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+        "500":
+          description: Error internal server
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+      summary: Login pengguna
+      tags:
+      - Authentication
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Membuat akun pengguna baru dengan email dan password.
+      parameters:
+      - description: Informasi Registrasi Pengguna
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/tables.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/tables.User'
+        "400":
+          description: Input tidak valid
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+        "409":
+          description: Email sudah terdaftar
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+        "500":
+          description: Error internal server
+          schema:
+            $ref: '#/definitions/controller.ErrorResponse'
+      summary: Registrasi pengguna baru
+      tags:
+      - Authentication
+swagger: "2.0"
