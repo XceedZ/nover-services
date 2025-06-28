@@ -127,6 +127,47 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/authors/{authorId}/books": {
+            "get": {
+                "description": "Mengambil daftar semua buku dari seorang penulis berdasarkan ID penulis.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Book"
+                ],
+                "summary": "Dapatkan Buku Berdasarkan Penulis (Publik)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID dari Penulis",
+                        "name": "authorId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.BookListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID Penulis tidak valid",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error internal server",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/bank/get": {
             "get": {
                 "description": "Mengambil daftar semua bank yang aktif, diurutkan berdasarkan nama.",
@@ -154,6 +195,114 @@ const docTemplate = `{
                         "description": "Terjadi kesalahan internal pada server",
                         "schema": {
                             "$ref": "#/definitions/fiber.Map"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/books/create": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Membuat buku baru oleh pengguna yang sudah terotentikasi dan berstatus sebagai penulis.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Book"
+                ],
+                "summary": "Buat Buku Baru",
+                "parameters": [
+                    {
+                        "description": "Data buku yang akan dibuat",
+                        "name": "book_data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.CreateBookRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/tables.Book"
+                        }
+                    },
+                    "403": {
+                        "description": "Akses ditolak (bukan penulis)",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/books/my-books": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Mengambil daftar semua buku yang ditulis oleh pengguna yang sedang login.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Book"
+                ],
+                "summary": "Dapatkan Buku Saya (Pribadi)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.BookListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Tidak terotentikasi",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error internal server",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/genres": {
+            "get": {
+                "description": "Mengambil daftar semua genre yang tersedia dan aktif di sistem.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Genre"
+                ],
+                "summary": "Dapatkan Semua Genre Aktif",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.GenreListResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error internal server",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
                         }
                     }
                 }
@@ -320,6 +469,37 @@ const docTemplate = `{
                 }
             }
         },
+        "controllers.BookListResponse": {
+            "type": "object",
+            "properties": {
+                "bookList": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tables.Book"
+                    }
+                }
+            }
+        },
+        "controllers.CreateBookRequest": {
+            "type": "object",
+            "properties": {
+                "coverImageUrl": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "genreIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "controllers.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -328,6 +508,17 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string"
+                }
+            }
+        },
+        "controllers.GenreListResponse": {
+            "type": "object",
+            "properties": {
+                "genreList": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tables.Genre"
+                    }
                 }
             }
         },
@@ -358,6 +549,71 @@ const docTemplate = `{
         "fiber.Map": {
             "type": "object",
             "additionalProperties": true
+        },
+        "tables.Book": {
+            "type": "object",
+            "properties": {
+                "bookId": {
+                    "type": "integer"
+                },
+                "coverImageUrl": {
+                    "type": "string"
+                },
+                "createDatetime": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "genres": {
+                    "description": "--- PERUBAHAN DI SINI ---\nField baru untuk menampung genre sebagai satu string.\n'db:\"genres\"' akan memetakan hasil dari STRING_AGG.",
+                    "type": "string"
+                },
+                "ratingAverage": {
+                    "type": "number"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "totalViews": {
+                    "type": "integer"
+                },
+                "updateDatetime": {
+                    "type": "string"
+                }
+            }
+        },
+        "tables.Genre": {
+            "type": "object",
+            "properties": {
+                "activeDatetime": {
+                    "type": "string"
+                },
+                "createDatetime": {
+                    "type": "string"
+                },
+                "genreId": {
+                    "type": "integer"
+                },
+                "genreName": {
+                    "type": "string"
+                },
+                "genreTl": {
+                    "type": "string"
+                },
+                "nonActiveDatetime": {
+                    "type": "string"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "updateDatetime": {
+                    "type": "string"
+                }
+            }
         },
         "tables.User": {
             "type": "object",

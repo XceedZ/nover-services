@@ -29,12 +29,39 @@ definitions:
       bankName:
         type: string
     type: object
+  controllers.BookListResponse:
+    properties:
+      bookList:
+        items:
+          $ref: '#/definitions/tables.Book'
+        type: array
+    type: object
+  controllers.CreateBookRequest:
+    properties:
+      coverImageUrl:
+        type: string
+      description:
+        type: string
+      genreIds:
+        items:
+          type: integer
+        type: array
+      title:
+        type: string
+    type: object
   controllers.ErrorResponse:
     properties:
       code:
         type: string
       message:
         type: string
+    type: object
+  controllers.GenreListResponse:
+    properties:
+      genreList:
+        items:
+          $ref: '#/definitions/tables.Genre'
+        type: array
     type: object
   controllers.LoginRequest:
     properties:
@@ -54,6 +81,52 @@ definitions:
     type: object
   fiber.Map:
     additionalProperties: true
+    type: object
+  tables.Book:
+    properties:
+      bookId:
+        type: integer
+      coverImageUrl:
+        type: string
+      createDatetime:
+        type: string
+      description:
+        type: string
+      genres:
+        description: |-
+          --- PERUBAHAN DI SINI ---
+          Field baru untuk menampung genre sebagai satu string.
+          'db:"genres"' akan memetakan hasil dari STRING_AGG.
+        type: string
+      ratingAverage:
+        type: number
+      status:
+        type: string
+      title:
+        type: string
+      totalViews:
+        type: integer
+      updateDatetime:
+        type: string
+    type: object
+  tables.Genre:
+    properties:
+      activeDatetime:
+        type: string
+      createDatetime:
+        type: string
+      genreId:
+        type: integer
+      genreName:
+        type: string
+      genreTl:
+        type: string
+      nonActiveDatetime:
+        type: string
+      remark:
+        type: string
+      updateDatetime:
+        type: string
     type: object
   tables.User:
     properties:
@@ -174,6 +247,34 @@ paths:
       summary: Registrasi pengguna baru
       tags:
       - Authentication
+  /v1/authors/{authorId}/books:
+    get:
+      description: Mengambil daftar semua buku dari seorang penulis berdasarkan ID
+        penulis.
+      parameters:
+      - description: ID dari Penulis
+        in: path
+        name: authorId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.BookListResponse'
+        "400":
+          description: ID Penulis tidak valid
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: Error internal server
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: Dapatkan Buku Berdasarkan Penulis (Publik)
+      tags:
+      - Book
   /v1/bank/get:
     get:
       consumes:
@@ -195,6 +296,76 @@ paths:
       summary: Daftar Bank
       tags:
       - Bank
+  /v1/books/create:
+    post:
+      consumes:
+      - application/json
+      description: Membuat buku baru oleh pengguna yang sudah terotentikasi dan berstatus
+        sebagai penulis.
+      parameters:
+      - description: Data buku yang akan dibuat
+        in: body
+        name: book_data
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CreateBookRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/tables.Book'
+        "403":
+          description: Akses ditolak (bukan penulis)
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Buat Buku Baru
+      tags:
+      - Book
+  /v1/books/my-books:
+    get:
+      description: Mengambil daftar semua buku yang ditulis oleh pengguna yang sedang
+        login.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.BookListResponse'
+        "401":
+          description: Tidak terotentikasi
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: Error internal server
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Dapatkan Buku Saya (Pribadi)
+      tags:
+      - Book
+  /v1/genres:
+    get:
+      description: Mengambil daftar semua genre yang tersedia dan aktif di sistem.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.GenreListResponse'
+        "500":
+          description: Error internal server
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: Dapatkan Semua Genre Aktif
+      tags:
+      - Genre
   /v1/user/author-status:
     get:
       description: Memvalidasi token, memeriksa apakah pengguna adalah penulis, dan

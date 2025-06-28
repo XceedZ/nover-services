@@ -12,10 +12,12 @@ import (
 
 func SetupRoutes(app *fiber.App, db *pgxpool.Pool) {
 	app.Use(logger.New())
-
 	api := app.Group("/api")
 
+	// --- Inisialisasi semua DAO ---
 	userDAO := dao.NewUserDao(db)
+	bookDAO := dao.NewBookDao(db)
+	genreDAO := dao.NewGenreDao(db)
 
 	// --- Auth Routes ---
 	authController := controllers.NewAuthController(userDAO)
@@ -26,6 +28,9 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool) {
 	// --- API v1 Group ---
 	apiV1 := api.Group("/v1")
 
+	genreController := controllers.NewGenreController(genreDAO)
+	apiV1.Get("/genres", genreController.GetAllGenres)
+
 	// --- Bank Routes ---
 	bankController := controllers.NewBankController(db)
 	bankGroup := apiV1.Group("/bank")
@@ -34,9 +39,15 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool) {
 	// --- User Routes ---
 	userController := controllers.NewUserController(userDAO)
 	userGroup := apiV1.Group("/user")
-
-	// Protected endpoints
 	protectedUserGroup := userGroup.Group("/", middleware.Protected())
 	protectedUserGroup.Post("/request-author", userController.RequestBecomeAuthor)
 	protectedUserGroup.Get("/author-status", userController.CheckAuthorStatus)
+
+	// --- Book Routes ---
+	bookController := controllers.NewBookController(bookDAO, userDAO)
+	bookGroup := apiV1.Group("/books", middleware.Protected())
+	bookGroup.Post("/create", bookController.CreateBook)
+	bookGroup.Get("/my-books", bookController.GetMyBooks)
+	apiV1.Get("/authors/:authorId/books", bookController.GetBooksByAuthor)
+
 }
