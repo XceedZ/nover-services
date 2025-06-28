@@ -3,6 +3,7 @@ package routes
 import (
 	"noversystem/pkg/controllers"
 	"noversystem/pkg/dao"
+	"noversystem/pkg/middleware"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -29,4 +30,13 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool) {
 	bankController := controllers.NewBankController(db)
 	bankGroup := apiV1.Group("/bank")
 	bankGroup.Get("/get", bankController.GetBankList)
+
+	// --- User Routes ---
+	userController := controllers.NewUserController(userDAO)
+	userGroup := apiV1.Group("/user")
+
+	// Protected endpoints
+	protectedUserGroup := userGroup.Group("/", middleware.Protected())
+	protectedUserGroup.Post("/request-author", userController.RequestBecomeAuthor)
+	protectedUserGroup.Get("/author-status", userController.CheckAuthorStatus)
 }

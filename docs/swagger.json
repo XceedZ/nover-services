@@ -152,19 +152,164 @@
                     }
                 }
             }
+        },
+        "/v1/user/author-status": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Memvalidasi token, memeriksa apakah pengguna adalah penulis, dan mengembalikan data profil lengkap pengguna.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Cek Status Penulis \u0026 Profil",
+                "responses": {
+                    "200": {
+                        "description": "Status penulis dan data profil lengkap",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.AuthorStatusResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Tidak terotentikasi",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Pengguna tidak ditemukan",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error internal server",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/user/request-author": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Memperbarui profil pengguna untuk menjadi penulis dengan melengkapi data yang diperlukan. Endpoint ini memerlukan otentikasi.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Permintaan menjadi Penulis",
+                "parameters": [
+                    {
+                        "description": "Data untuk menjadi penulis",
+                        "name": "author_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.AuthorRequestPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pesan sukses",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Input tidak valid",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Tidak terotentikasi",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Nama pena sudah digunakan",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error internal server",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "controllers.AuthorRequestPayload": {
+            "type": "object",
+            "properties": {
+                "accountNumber": {
+                    "type": "string"
+                },
+                "bankId": {
+                    "type": "integer"
+                },
+                "instagram": {
+                    "type": "string"
+                },
+                "penName": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.AuthorStatusResponse": {
+            "type": "object",
+            "properties": {
+                "isAuthor": {
+                    "type": "boolean"
+                },
+                "user": {
+                    "$ref": "#/definitions/tables.User"
+                }
+            }
+        },
         "controllers.BankResponse": {
             "type": "object",
             "properties": {
-                "bank_code": {
+                "bankCode": {
                     "type": "string"
                 },
-                "bank_id": {
+                "bankId": {
                     "type": "integer"
                 },
-                "bank_name": {
+                "bankName": {
                     "type": "string"
                 }
             }
@@ -211,49 +356,52 @@
         "tables.User": {
             "type": "object",
             "properties": {
-                "account_number": {
+                "accountNumber": {
                     "type": "string"
                 },
-                "avatar_url": {
+                "avatarUrl": {
                     "type": "string"
                 },
-                "bank_id": {
+                "bankId": {
                     "type": "integer"
                 },
-                "create_datetime": {
+                "createDatetime": {
                     "type": "string"
                 },
                 "email": {
                     "type": "string"
                 },
-                "flg_author": {
+                "flgAuthor": {
                     "type": "string"
                 },
-                "full_name": {
+                "fullName": {
                     "type": "string"
                 },
                 "instagram": {
                     "type": "string"
                 },
-                "is_email_verified": {
+                "isEmailVerified": {
                     "type": "boolean"
                 },
-                "login_with": {
+                "loginWith": {
                     "type": "string"
                 },
                 "password": {
                     "type": "string"
                 },
+                "penName": {
+                    "type": "string"
+                },
                 "phone": {
                     "type": "string"
                 },
-                "update_datetime": {
+                "updateDatetime": {
                     "type": "string"
                 },
-                "user_code": {
+                "userCode": {
                     "type": "string"
                 },
-                "user_id": {
+                "userId": {
                     "type": "integer"
                 },
                 "username": {

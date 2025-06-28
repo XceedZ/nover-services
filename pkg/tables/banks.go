@@ -3,12 +3,12 @@ package tables
 import "time"
 
 type Bank struct {
-	BankID            int64      `json:"bank_id"`
-	BankName          string     `json:"bank_name"`
-	BankCode          *string    `json:"bank_code,omitempty"`
+	BankId            int64      `json:"bankId"`
+	BankName          string     `json:"bankName"`
+	BankCode          *string    `json:"bankCode,omitempty"`
 	Remark            *string    `json:"remark,omitempty"`
-	ActiveDatetime    time.Time  `json:"active_datetime"`
-	NonActiveDatetime *time.Time `json:"non_active_datetime,omitempty"`
-	CreateDatetime    time.Time  `json:"create_datetime"`
-	UpdateDatetime    *time.Time `json:"update_datetime,omitempty"`
+	ActiveDatetime    time.Time  `json:"activeDatetime"`
+	NonActiveDatetime *time.Time `json:"nonActiveDatetime,omitempty"`
+	CreateDatetime    time.Time  `json:"createDatetime"`
+	UpdateDatetime    *time.Time `json:"updateDatetime,omitempty"`
 }

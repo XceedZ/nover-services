@@ -1,12 +1,32 @@
 basePath: /api
 definitions:
+  controllers.AuthorRequestPayload:
+    properties:
+      accountNumber:
+        type: string
+      bankId:
+        type: integer
+      instagram:
+        type: string
+      penName:
+        type: string
+      phone:
+        type: string
+    type: object
+  controllers.AuthorStatusResponse:
+    properties:
+      isAuthor:
+        type: boolean
+      user:
+        $ref: '#/definitions/tables.User'
+    type: object
   controllers.BankResponse:
     properties:
-      bank_code:
+      bankCode:
         type: string
-      bank_id:
+      bankId:
         type: integer
-      bank_name:
+      bankName:
         type: string
     type: object
   controllers.ErrorResponse:
@@ -37,35 +57,37 @@ definitions:
     type: object
   tables.User:
     properties:
-      account_number:
+      accountNumber:
         type: string
-      avatar_url:
+      avatarUrl:
         type: string
-      bank_id:
+      bankId:
         type: integer
-      create_datetime:
+      createDatetime:
         type: string
       email:
         type: string
-      flg_author:
+      flgAuthor:
         type: string
-      full_name:
+      fullName:
         type: string
       instagram:
         type: string
-      is_email_verified:
+      isEmailVerified:
         type: boolean
-      login_with:
+      loginWith:
         type: string
       password:
         type: string
+      penName:
+        type: string
       phone:
         type: string
-      update_datetime:
+      updateDatetime:
         type: string
-      user_code:
+      userCode:
         type: string
-      user_id:
+      userId:
         type: integer
       username:
         type: string
@@ -173,4 +195,78 @@ paths:
       summary: Daftar Bank
       tags:
       - Bank
+  /v1/user/author-status:
+    get:
+      description: Memvalidasi token, memeriksa apakah pengguna adalah penulis, dan
+        mengembalikan data profil lengkap pengguna.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Status penulis dan data profil lengkap
+          schema:
+            $ref: '#/definitions/controllers.AuthorStatusResponse'
+        "401":
+          description: Tidak terotentikasi
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "404":
+          description: Pengguna tidak ditemukan
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: Error internal server
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Cek Status Penulis & Profil
+      tags:
+      - User
+  /v1/user/request-author:
+    post:
+      consumes:
+      - application/json
+      description: Memperbarui profil pengguna untuk menjadi penulis dengan melengkapi
+        data yang diperlukan. Endpoint ini memerlukan otentikasi.
+      parameters:
+      - description: Data untuk menjadi penulis
+        in: body
+        name: author_request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.AuthorRequestPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Pesan sukses
+          schema:
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+            type: object
+        "400":
+          description: Input tidak valid
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "401":
+          description: Tidak terotentikasi
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "409":
+          description: Nama pena sudah digunakan
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: Error internal server
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Permintaan menjadi Penulis
+      tags:
+      - User
 swagger: "2.0"

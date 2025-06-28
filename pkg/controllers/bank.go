@@ -18,9 +18,9 @@ func NewBankController(db *pgxpool.Pool) *BankController {
 }
 
 type BankResponse struct {
-	BankId   int64  `json:"bank_id"`
-	BankName string `json:"bank_name"`
-	BankCode string `json:"bank_code"`
+	BankId   int64  `json:"bankId"`
+	BankName string `json:"bankName"`
+	BankCode string `json:"bankCode"`
 }
 
 // GetBankList adalah handler untuk mengambil daftar bank.

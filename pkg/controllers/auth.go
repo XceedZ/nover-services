@@ -20,8 +20,8 @@ type ErrorResponse struct {
 }
 
 type LoginSuccessResponse struct {
-	Token string        `json:"token"`
-	User  *tables.User  `json:"user"`
+	Token string       `json:"token"`
+	User  *tables.User `json:"user"`
 }
 
 type AuthController struct {
@@ -64,7 +64,7 @@ func (c *AuthController) Register(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{Code: constants.ErrCodeInternalServer, Message: "Failed to hash password"})
 	}
 	req.Password = string(hashedPassword)
-	
+
 	uniqueString := req.Email + time.Now().String()
 	hash := md5.Sum([]byte(uniqueString))
 	req.UserCode = hex.EncodeToString(hash[:])
@@ -74,8 +74,8 @@ func (c *AuthController) Register(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusConflict).JSON(ErrorResponse{Code: constants.ErrCodeAuthEmailOrUsernameTaken, Message: "Failed to register user, email or username may already exist"})
 	}
-	req.UserID = newID
-    req.Password = "" 
+	req.UserId = newID
+	req.Password = ""
 
 	return ctx.Status(fiber.StatusCreated).JSON(req)
 }
@@ -117,18 +117,18 @@ func (c *AuthController) Login(ctx *fiber.Ctx) error {
 	}
 
 	claims := jwt.MapClaims{
-		"user_id":    user.UserID,
-		"user_code":  user.UserCode,
-		"email":      user.Email,
-		"login_with": user.LoginWith,
-		"exp":        time.Now().Add(time.Hour * 72).Unix(),
+		"userId":    user.UserId,
+		"userCode":  user.UserCode,
+		"email":     user.Email,
+		"loginWith": user.LoginWith,
+		"exp":       time.Now().Add(time.Hour * 72).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedToken, err := token.SignedString([]byte(jwtSecret))
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{Code: constants.ErrCodeAuthTokenCreation, Message: "Failed to create token"})
 	}
-	
+
 	user.Password = ""
 
 	response := LoginSuccessResponse{
