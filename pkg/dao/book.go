@@ -2,10 +2,12 @@ package dao
 
 import (
 	"context"
+	"errors"
 	"noversystem/pkg/tables"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/v2/pgxscan"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
 )
@@ -80,7 +82,6 @@ func (d *BookDao) CreateBook(ctx context.Context, bookData *tables.Book, authorI
 	return bookData, nil
 }
 
-
 // --- FUNGSI GetBooksByAuthorID DIPERBARUI TOTAL ---
 
 // GetBooksByAuthorID mengambil semua buku yang ditulis oleh seorang penulis,
@@ -117,4 +118,92 @@ func (d *BookDao) GetBooksByAuthorID(ctx context.Context, authorID int64) ([]tab
 	}
 
 	return books, nil
+}
+
+func (d *BookDao) GetBookWithAuthor(ctx context.Context, bookID int64) (*tables.Book, error) {
+	var book tables.Book
+	const query = `
+		SELECT
+			b.book_id, b.title, b.status, ab.user_id as author_id
+		FROM
+			books b
+		JOIN
+			author_books ab ON b.book_id = ab.book_id
+		WHERE
+			b.book_id = $1
+		LIMIT 1;` // Hanya mengambil satu penulis utama untuk validasi
+
+	err := pgxscan.Get(ctx, d.DB, &book, query, bookID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil // Buku tidak ditemukan
+		}
+		return nil, err
+	}
+	return &book, nil
+}
+
+// CountChaptersByBookID menghitung jumlah chapter yang ada untuk sebuah buku.
+func (d *BookDao) CountChaptersByBookID(ctx context.Context, bookID int64) (int, error) {
+	var count int
+	const query = `SELECT COUNT(*) FROM chapters WHERE book_id = $1`
+	err := d.DB.QueryRow(ctx, query, bookID).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+// UpdateBookStatus mengubah status sebuah buku.
+func (d *BookDao) UpdateBookStatus(ctx context.Context, bookID int64, newStatus string) error {
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	sql, args, err := psql.Update("books").
+		Set("status", newStatus).
+		Where(squirrel.Eq{"book_id": bookID}).
+		ToSql()
+
+	if err != nil {
+		return err
+	}
+
+	cmdTag, err := d.DB.Exec(ctx, sql, args...)
+	if err != nil {
+		return err
+	}
+	if cmdTag.RowsAffected() != 1 {
+		return errors.New("buku tidak ditemukan atau status tidak berubah")
+	}
+	return nil
+}
+
+// GetBookDetailByID mengambil detail buku tunggal, lengkap dengan genre yang digabungkan.
+func (d *BookDao) GetBookDetailByID(ctx context.Context, bookID int64) (*tables.Book, error) {
+    var book tables.Book
+	const query = `
+		SELECT
+			b.book_id, b.title, b.description, b.cover_image_url, b.status,
+			b.rating_average, b.total_views, b.create_datetime, b.update_datetime,
+			ab.user_id as author_id, -- Sertakan author_id untuk validasi
+			STRING_AGG(g.genre_name, ', ') as genres
+		FROM
+			books b
+		JOIN
+			author_books ab ON b.book_id = ab.book_id
+		LEFT JOIN
+			book_genres bg ON b.book_id = bg.book_id
+		LEFT JOIN
+			genres g ON bg.genre_id = g.genre_id
+		WHERE
+			b.book_id = $1
+		GROUP BY
+			b.book_id, ab.user_id
+	`
+	err := pgxscan.Get(ctx, d.DB, &book, query, bookID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil // Buku tidak ditemukan
+		}
+		return nil, err
+	}
+	return &book, nil
 }

@@ -14,4 +14,8 @@ const (
 	ErrCodeUserPenNameTaken = "pen_name_taken"
 	ErrCodeUserNotFound     = "not_found"
 	ErrCodeUserUpdateFailed = "update_failed"
+
+	ErrCodeBookNotOwner          = "not_owner"
+    ErrCodeBookNoChapters        = "no_chapters"
+    ErrCodeBookNotPublished      = "not_published"
 )

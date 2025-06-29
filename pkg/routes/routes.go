@@ -18,6 +18,7 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool) {
 	userDAO := dao.NewUserDao(db)
 	bookDAO := dao.NewBookDao(db)
 	genreDAO := dao.NewGenreDao(db)
+	chapterDAO := dao.NewChapterDao(db) // Inisialisasi ChapterDAO
 
 	// --- Auth Routes ---
 	authController := controllers.NewAuthController(userDAO)
@@ -44,10 +45,18 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool) {
 	protectedUserGroup.Get("/author-status", userController.CheckAuthorStatus)
 
 	// --- Book Routes ---
-	bookController := controllers.NewBookController(bookDAO, userDAO)
+bookController := controllers.NewBookController(bookDAO, userDAO, chapterDAO)
 	bookGroup := apiV1.Group("/books", middleware.Protected())
 	bookGroup.Post("/create", bookController.CreateBook)
 	bookGroup.Get("/my-books", bookController.GetMyBooks)
+	bookGroup.Patch("/:bookId/publish", bookController.PublishBook)
+	bookGroup.Patch("/:bookId/unpublish", bookController.UnpublishBook)
+	bookGroup.Patch("/:bookId/complete", bookController.CompleteBook)
+	bookGroup.Patch("/:bookId/hold", bookController.HoldBook)
+	bookGroup.Get("/:bookId/detail", bookController.GetMyBookDetail)
 	apiV1.Get("/authors/:authorId/books", bookController.GetBooksByAuthor)
+
+	chapterController := controllers.NewChapterController(chapterDAO, bookDAO)
+	bookGroup.Post("/:bookId/chapters", chapterController.CreateChapter)
 
 }
