@@ -15,7 +15,8 @@ const (
 	ErrCodeUserNotFound     = "not_found"
 	ErrCodeUserUpdateFailed = "update_failed"
 
-	ErrCodeBookNotOwner          = "not_owner"
-    ErrCodeBookNoChapters        = "no_chapters"
-    ErrCodeBookNotPublished      = "not_published"
+	ErrCodeBookNotOwner     = "not_owner"
+	ErrCodeBookNoChapters   = "no_chapters"
+	ErrCodeBookNotPublished = "not_published"
+	ErrCodeBookNotFound     = "not_found"
 )

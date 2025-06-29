@@ -39,14 +39,20 @@ definitions:
   controllers.CreateBookRequest:
     properties:
       coverImageUrl:
+        example: https://path.to/your/image.jpg
         type: string
       description:
+        example: Deskripsi singkat tentang petualangan epik.
         type: string
       genreIds:
+        example:
+        - 1
+        - 2
         items:
           type: integer
         type: array
       title:
+        example: Judul Buku Fantasi
         type: string
     type: object
   controllers.CreateChapterRequest:
@@ -93,6 +99,8 @@ definitions:
     type: object
   tables.Book:
     properties:
+      authorPenName:
+        type: string
       bookId:
         type: integer
       coverImageUrl:
@@ -123,6 +131,11 @@ definitions:
       chapters:
         items:
           $ref: '#/definitions/tables.Chapter'
+        type: array
+      reviews:
+        description: Ditambahkan untuk menampung ulasan
+        items:
+          $ref: '#/definitions/tables.Review'
         type: array
     type: object
   tables.Chapter:
@@ -166,6 +179,43 @@ definitions:
         type: string
       updateDatetime:
         type: string
+    type: object
+  tables.PaginatedBookResponse:
+    properties:
+      books:
+        items:
+          $ref: '#/definitions/tables.Book'
+        type: array
+      pagination:
+        $ref: '#/definitions/tables.PaginationInfo'
+    type: object
+  tables.PaginationInfo:
+    properties:
+      currentPage:
+        type: integer
+      pageSize:
+        type: integer
+      totalItems:
+        type: integer
+      totalPages:
+        type: integer
+    type: object
+  tables.Review:
+    properties:
+      authorAvatar:
+        type: string
+      authorPenName:
+        type: string
+      createDatetime:
+        type: string
+      rating:
+        type: integer
+      reviewId:
+        type: integer
+      reviewText:
+        type: string
+      userId:
+        type: integer
     type: object
   tables.User:
     properties:
@@ -286,10 +336,10 @@ paths:
       summary: Registrasi pengguna baru
       tags:
       - Authentication
-  /v1/authors/:authorId/books:
+  /v1/authors/{authorId}/books:
     get:
-      description: Mengambil daftar semua buku dari seorang penulis berdasarkan ID
-        penulis.
+      description: Mengambil daftar semua buku (kecuali draft) dari seorang penulis
+        berdasarkan ID penulis.
       parameters:
       - description: ID dari Penulis
         in: path
@@ -335,10 +385,39 @@ paths:
       summary: Daftar Bank
       tags:
       - Bank
-  /v1/books/:bookId/complete:
-    patch:
-      description: Mengubah status buku menjadi 'Completed'. Hanya bisa dilakukan
-        pada buku yang sedang 'Published'.
+  /v1/books:
+    get:
+      description: Mengambil daftar semua buku yang sudah dipublikasikan (status 'P',
+        'C', 'H') dengan sistem pagination.
+      parameters:
+      - default: 1
+        description: Nomor Halaman
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Jumlah item per halaman
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/tables.PaginatedBookResponse'
+        "500":
+          description: Error internal server
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: Dapatkan Daftar Buku (Publik, Paginasi)
+      tags:
+      - Book
+  /v1/books/{bookId}:
+    get:
+      description: Mengambil detail lengkap sebuah buku, termasuk daftar chapter,
+        penulis, dan ulasan.
       parameters:
       - description: ID Buku
         in: path
@@ -351,97 +430,18 @@ paths:
         "200":
           description: OK
           schema:
-            properties:
-              code:
-                type: string
-              message:
-                type: string
-            type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Selesaikan Buku
-      tags:
-      - Book Management
-  /v1/books/:bookId/hold:
-    patch:
-      description: Mengubah status buku menjadi 'On Hold'.
-      parameters:
-      - description: ID Buku
-        in: path
-        name: bookId
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
+            $ref: '#/definitions/tables.BookDetailResponse'
+        "404":
+          description: Buku tidak ditemukan
           schema:
-            properties:
-              code:
-                type: string
-              message:
-                type: string
-            type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Tunda Buku
-      tags:
-      - Book Management
-  /v1/books/:bookId/publish:
-    patch:
-      description: Mengubah status buku menjadi 'Published'. Memerlukan minimal 1
-        chapter.
-      parameters:
-      - description: ID Buku
-        in: path
-        name: bookId
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: Error internal server
           schema:
-            properties:
-              code:
-                type: string
-              message:
-                type: string
-            type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Publikasikan Buku
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: Dapatkan Detail Buku (Publik)
       tags:
-      - Book Management
-  /v1/books/:bookId/unpublish:
-    patch:
-      description: Mengubah status buku kembali menjadi 'Draft'. Hanya bisa dilakukan
-        pada buku yang sedang 'Published'.
-      parameters:
-      - description: ID Buku
-        in: path
-        name: bookId
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            properties:
-              code:
-                type: string
-              message:
-                type: string
-            type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Batalkan Publikasi Buku
-      tags:
-      - Book Management
+      - Book
   /v1/books/{bookId}/chapters:
     post:
       consumes:
@@ -492,6 +492,33 @@ paths:
       summary: Tambah Chapter Baru
       tags:
       - Chapter
+  /v1/books/{bookId}/complete:
+    patch:
+      description: Mengubah status buku menjadi 'Completed'. Hanya bisa dilakukan
+        pada buku yang sedang 'Published'.
+      parameters:
+      - description: ID Buku
+        in: path
+        name: bookId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Selesaikan Buku
+      tags:
+      - Book Management
   /v1/books/{bookId}/detail:
     get:
       description: Mengambil detail lengkap sebuah buku, termasuk daftar chapternya.
@@ -527,7 +554,91 @@ paths:
             $ref: '#/definitions/controllers.ErrorResponse'
       security:
       - ApiKeyAuth: []
-      summary: Dapatkan Detail Buku Saya
+      summary: Dapatkan Detail Buku Saya (Pribadi)
+      tags:
+      - Book Management
+  /v1/books/{bookId}/hold:
+    patch:
+      description: Mengubah status buku menjadi 'On Hold'.
+      parameters:
+      - description: ID Buku
+        in: path
+        name: bookId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Tunda Buku
+      tags:
+      - Book Management
+  /v1/books/{bookId}/publish:
+    patch:
+      description: Mengubah status buku menjadi 'Published'. Memerlukan minimal 1
+        chapter.
+      parameters:
+      - description: ID Buku
+        in: path
+        name: bookId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+            type: object
+        "400":
+          description: Buku tidak memiliki chapter
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Publikasikan Buku
+      tags:
+      - Book Management
+  /v1/books/{bookId}/unpublish:
+    patch:
+      description: Mengubah status buku kembali menjadi 'Draft'. Hanya bisa dilakukan
+        pada buku yang sedang 'Published'.
+      parameters:
+      - description: ID Buku
+        in: path
+        name: bookId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Batalkan Publikasi Buku
       tags:
       - Book Management
   /v1/books/create:
@@ -550,8 +661,20 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/tables.Book'
+        "400":
+          description: Input tidak valid
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "401":
+          description: Tidak terotentikasi
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
         "403":
           description: Akses ditolak (bukan penulis)
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: Error internal server
           schema:
             $ref: '#/definitions/controllers.ErrorResponse'
       security:
@@ -561,8 +684,8 @@ paths:
       - Book
   /v1/books/my-books:
     get:
-      description: Mengambil daftar semua buku yang ditulis oleh pengguna yang sedang
-        login.
+      description: Mengambil daftar semua buku (termasuk draft) yang ditulis oleh
+        pengguna yang sedang login.
       produces:
       - application/json
       responses:
@@ -583,6 +706,34 @@ paths:
       summary: Dapatkan Buku Saya (Pribadi)
       tags:
       - Book
+  /v1/chapters/{chapterId}:
+    get:
+      description: Mengambil konten lengkap dari sebuah chapter. Jika chapter berbayar,
+        memerlukan token otentikasi yang valid dan status unlock.
+      parameters:
+      - description: ID Chapter
+        in: path
+        name: chapterId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/tables.Chapter'
+        "402":
+          description: Pembayaran/Koin diperlukan
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "404":
+          description: Chapter tidak ditemukan
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: Dapatkan Isi Chapter (Publik)
+      tags:
+      - Chapter
   /v1/genres:
     get:
       description: Mengambil daftar semua genre yang tersedia dan aktif di sistem.

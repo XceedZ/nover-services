@@ -127,9 +127,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/authors/:authorId/books": {
+        "/v1/authors/{authorId}/books": {
             "get": {
-                "description": "Mengambil daftar semua buku dari seorang penulis berdasarkan ID penulis.",
+                "description": "Mengambil daftar semua buku (kecuali draft) dari seorang penulis berdasarkan ID penulis.",
                 "produces": [
                     "application/json"
                 ],
@@ -200,169 +200,43 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/books/:bookId/complete": {
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Mengubah status buku menjadi 'Completed'. Hanya bisa dilakukan pada buku yang sedang 'Published'.",
+        "/v1/books": {
+            "get": {
+                "description": "Mengambil daftar semua buku yang sudah dipublikasikan (status 'P', 'C', 'H') dengan sistem pagination.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Book Management"
+                    "Book"
                 ],
-                "summary": "Selesaikan Buku",
+                "summary": "Dapatkan Daftar Buku (Publik, Paginasi)",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID Buku",
-                        "name": "bookId",
-                        "in": "path",
-                        "required": true
+                        "default": 1,
+                        "description": "Nomor Halaman",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Jumlah item per halaman",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "properties": {
-                                "code": {
-                                    "type": "string"
-                                },
-                                "message": {
-                                    "type": "string"
-                                }
-                            }
+                            "$ref": "#/definitions/tables.PaginatedBookResponse"
                         }
-                    }
-                }
-            }
-        },
-        "/v1/books/:bookId/hold": {
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Mengubah status buku menjadi 'On Hold'.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Book Management"
-                ],
-                "summary": "Tunda Buku",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID Buku",
-                        "name": "bookId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
+                    },
+                    "500": {
+                        "description": "Error internal server",
                         "schema": {
-                            "type": "object",
-                            "properties": {
-                                "code": {
-                                    "type": "string"
-                                },
-                                "message": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/books/:bookId/publish": {
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Mengubah status buku menjadi 'Published'. Memerlukan minimal 1 chapter.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Book Management"
-                ],
-                "summary": "Publikasikan Buku",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID Buku",
-                        "name": "bookId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "code": {
-                                    "type": "string"
-                                },
-                                "message": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/books/:bookId/unpublish": {
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Mengubah status buku kembali menjadi 'Draft'. Hanya bisa dilakukan pada buku yang sedang 'Published'.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Book Management"
-                ],
-                "summary": "Batalkan Publikasi Buku",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID Buku",
-                        "name": "bookId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "code": {
-                                    "type": "string"
-                                },
-                                "message": {
-                                    "type": "string"
-                                }
-                            }
+                            "$ref": "#/definitions/controllers.ErrorResponse"
                         }
                     }
                 }
@@ -404,8 +278,26 @@ const docTemplate = `{
                             "$ref": "#/definitions/tables.Book"
                         }
                     },
+                    "400": {
+                        "description": "Input tidak valid",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Tidak terotentikasi",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
                     "403": {
                         "description": "Akses ditolak (bukan penulis)",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error internal server",
                         "schema": {
                             "$ref": "#/definitions/controllers.ErrorResponse"
                         }
@@ -420,7 +312,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Mengambil daftar semua buku yang ditulis oleh pengguna yang sedang login.",
+                "description": "Mengambil daftar semua buku (termasuk draft) yang ditulis oleh pengguna yang sedang login.",
                 "produces": [
                     "application/json"
                 ],
@@ -437,6 +329,47 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Tidak terotentikasi",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error internal server",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/books/{bookId}": {
+            "get": {
+                "description": "Mengambil detail lengkap sebuah buku, termasuk daftar chapter, penulis, dan ulasan.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Book"
+                ],
+                "summary": "Dapatkan Detail Buku (Publik)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID Buku",
+                        "name": "bookId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/tables.BookDetailResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Buku tidak ditemukan",
                         "schema": {
                             "$ref": "#/definitions/controllers.ErrorResponse"
                         }
@@ -526,6 +459,48 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/books/{bookId}/complete": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Mengubah status buku menjadi 'Completed'. Hanya bisa dilakukan pada buku yang sedang 'Published'.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Book Management"
+                ],
+                "summary": "Selesaikan Buku",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID Buku",
+                        "name": "bookId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/v1/books/{bookId}/detail": {
             "get": {
                 "security": [
@@ -540,7 +515,7 @@ const docTemplate = `{
                 "tags": [
                     "Book Management"
                 ],
-                "summary": "Dapatkan Detail Buku Saya",
+                "summary": "Dapatkan Detail Buku Saya (Pribadi)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -577,6 +552,179 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Error internal server",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/books/{bookId}/hold": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Mengubah status buku menjadi 'On Hold'.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Book Management"
+                ],
+                "summary": "Tunda Buku",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID Buku",
+                        "name": "bookId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/books/{bookId}/publish": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Mengubah status buku menjadi 'Published'. Memerlukan minimal 1 chapter.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Book Management"
+                ],
+                "summary": "Publikasikan Buku",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID Buku",
+                        "name": "bookId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Buku tidak memiliki chapter",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/books/{bookId}/unpublish": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Mengubah status buku kembali menjadi 'Draft'. Hanya bisa dilakukan pada buku yang sedang 'Published'.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Book Management"
+                ],
+                "summary": "Batalkan Publikasi Buku",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID Buku",
+                        "name": "bookId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/chapters/{chapterId}": {
+            "get": {
+                "description": "Mengambil konten lengkap dari sebuah chapter. Jika chapter berbayar, memerlukan token otentikasi yang valid dan status unlock.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chapter"
+                ],
+                "summary": "Dapatkan Isi Chapter (Publik)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID Chapter",
+                        "name": "chapterId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/tables.Chapter"
+                        }
+                    },
+                    "402": {
+                        "description": "Pembayaran/Koin diperlukan",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Chapter tidak ditemukan",
                         "schema": {
                             "$ref": "#/definitions/controllers.ErrorResponse"
                         }
@@ -786,19 +934,26 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "coverImageUrl": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "https://path.to/your/image.jpg"
                 },
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Deskripsi singkat tentang petualangan epik."
                 },
                 "genreIds": {
                     "type": "array",
                     "items": {
                         "type": "integer"
-                    }
+                    },
+                    "example": [
+                        1,
+                        2
+                    ]
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Judul Buku Fantasi"
                 }
             }
         },
@@ -869,6 +1024,9 @@ const docTemplate = `{
         "tables.Book": {
             "type": "object",
             "properties": {
+                "authorPenName": {
+                    "type": "string"
+                },
                 "bookId": {
                     "type": "integer"
                 },
@@ -914,6 +1072,13 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/tables.Chapter"
+                    }
+                },
+                "reviews": {
+                    "description": "Ditambahkan untuk menampung ulasan",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tables.Review"
                     }
                 }
             }
@@ -979,6 +1144,63 @@ const docTemplate = `{
                 },
                 "updateDatetime": {
                     "type": "string"
+                }
+            }
+        },
+        "tables.PaginatedBookResponse": {
+            "type": "object",
+            "properties": {
+                "books": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tables.Book"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/tables.PaginationInfo"
+                }
+            }
+        },
+        "tables.PaginationInfo": {
+            "type": "object",
+            "properties": {
+                "currentPage": {
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "totalItems": {
+                    "type": "integer"
+                },
+                "totalPages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "tables.Review": {
+            "type": "object",
+            "properties": {
+                "authorAvatar": {
+                    "type": "string"
+                },
+                "authorPenName": {
+                    "type": "string"
+                },
+                "createDatetime": {
+                    "type": "string"
+                },
+                "rating": {
+                    "type": "integer"
+                },
+                "reviewId": {
+                    "type": "integer"
+                },
+                "reviewText": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "integer"
                 }
             }
         },

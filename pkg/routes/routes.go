@@ -19,6 +19,7 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool) {
 	bookDAO := dao.NewBookDao(db)
 	genreDAO := dao.NewGenreDao(db)
 	chapterDAO := dao.NewChapterDao(db) // Inisialisasi ChapterDAO
+	reviewDAO := dao.NewReviewDao(db)
 
 	// --- Auth Routes ---
 	authController := controllers.NewAuthController(userDAO)
@@ -29,15 +30,16 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool) {
 	// --- API v1 Group ---
 	apiV1 := api.Group("/v1")
 
+	// --- Genre Routes (Public) ---
 	genreController := controllers.NewGenreController(genreDAO)
 	apiV1.Get("/genres", genreController.GetAllGenres)
 
-	// --- Bank Routes ---
+	// --- Bank Routes (Public) ---
 	bankController := controllers.NewBankController(db)
 	bankGroup := apiV1.Group("/bank")
 	bankGroup.Get("/get", bankController.GetBankList)
 
-	// --- User Routes ---
+	// --- User Routes (Protected) ---
 	userController := controllers.NewUserController(userDAO)
 	userGroup := apiV1.Group("/user")
 	protectedUserGroup := userGroup.Group("/", middleware.Protected())
@@ -45,7 +47,14 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool) {
 	protectedUserGroup.Get("/author-status", userController.CheckAuthorStatus)
 
 	// --- Book Routes ---
-bookController := controllers.NewBookController(bookDAO, userDAO, chapterDAO)
+	bookController := controllers.NewBookController(bookDAO, userDAO, chapterDAO, reviewDAO)
+
+	// 👉 PUBLIC Book Endpoints (tidak pakai middleware, bebas akses tanpa token)
+	apiV1.Get("/books", bookController.GetPublishedBookList)
+	apiV1.Get("/authors/:authorId/books", bookController.GetBooksByAuthor)
+	apiV1.Get("/chapters/:chapterId", controllers.NewChapterController(chapterDAO, bookDAO).GetChapterContent)
+
+	// 👉 PROTECTED Book Endpoints (wajib pakai token)
 	bookGroup := apiV1.Group("/books", middleware.Protected())
 	bookGroup.Post("/create", bookController.CreateBook)
 	bookGroup.Get("/my-books", bookController.GetMyBooks)
@@ -54,9 +63,9 @@ bookController := controllers.NewBookController(bookDAO, userDAO, chapterDAO)
 	bookGroup.Patch("/:bookId/complete", bookController.CompleteBook)
 	bookGroup.Patch("/:bookId/hold", bookController.HoldBook)
 	bookGroup.Get("/:bookId/detail", bookController.GetMyBookDetail)
-	apiV1.Get("/authors/:authorId/books", bookController.GetBooksByAuthor)
 
+	// Chapter creation (Protected, karena di bawah bookGroup)
 	chapterController := controllers.NewChapterController(chapterDAO, bookDAO)
 	bookGroup.Post("/:bookId/chapters", chapterController.CreateChapter)
-
+	apiV1.Get("/books/:bookId", bookController.GetPublicBookDetail)
 }

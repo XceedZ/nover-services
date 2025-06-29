@@ -112,3 +112,69 @@ func (c *ChapterController) CreateChapter(ctx *fiber.Ctx) error {
 
 	return ctx.Status(fiber.StatusCreated).JSON(createdChapter)
 }
+
+// GetChapterContent adalah handler publik untuk membaca isi chapter.
+// @Summary      Dapatkan Isi Chapter (Publik)
+// @Description  Mengambil konten lengkap dari sebuah chapter. Jika chapter berbayar, memerlukan token otentikasi yang valid dan status unlock.
+// @Tags         Chapter
+// @Produce      json
+// @Param        chapterId path int true "ID Chapter"
+// @Success      200 {object} tables.Chapter
+// @Failure      402 {object} ErrorResponse "Pembayaran/Koin diperlukan"
+// @Failure      404 {object} ErrorResponse "Chapter tidak ditemukan"
+// @Router       /v1/chapters/{chapterId} [GET]
+func (c *ChapterController) GetChapterContent(ctx *fiber.Ctx) error {
+	chapterId, err := strconv.ParseInt(ctx.Params("chapterId"), 10, 64)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(ErrorResponse{Code: constants.ErrCodeBadRequest, Message: "Invalid chapter ID."})
+	}
+
+	chapter, err := c.chapterDAO.GetPublishedChapterByID(ctx.Context(), chapterId)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{Code: constants.ErrCodeInternalServer, Message: "Failed to retrieve chapter."})
+	}
+	if chapter == nil {
+		return ctx.Status(fiber.StatusNotFound).JSON(ErrorResponse{Code: constants.ErrCodeUserNotFound, Message: "Chapter not found or not published."})
+	}
+
+	// Jika chapter gratis (coin_cost = 0), langsung kembalikan isinya.
+	if chapter.CoinCost == 0 {
+		return ctx.Status(fiber.StatusOK).JSON(chapter)
+	}
+
+	// --- LOGIKA UNTUK CHAPTER BERBAYAR ---
+	
+	// Coba ambil user_id dari token. Middleware tidak dipakai karena ini endpoint publik.
+	userId, isGuest := GetUserIDFromToken(ctx) // Ini adalah fungsi helper yang perlu kita buat
+	if isGuest {
+		return ctx.Status(fiber.StatusPaymentRequired).JSON(ErrorResponse{Code: "chapter.error.login_required", Message: "You must be logged in to read a paid chapter."})
+	}
+
+	// Cek apakah user sudah membuka chapter ini
+	isUnlocked, err := c.chapterDAO.IsChapterUnlockedByUser(ctx.Context(), userId, chapterId)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{Code: constants.ErrCodeInternalServer, Message: "Failed to check unlock status."})
+	}
+
+	if !isUnlocked {
+		return ctx.Status(fiber.StatusPaymentRequired).JSON(ErrorResponse{Code: "chapter.error.unlock_required", Message: "You need to unlock this chapter with coins."})
+	}
+
+	// Jika semua validasi lolos, kembalikan isi chapter
+	return ctx.Status(fiber.StatusOK).JSON(chapter)
+}
+
+// GetUserIDFromToken adalah helper untuk mengambil user ID dari token JWT secara opsional.
+func GetUserIDFromToken(c *fiber.Ctx) (userID int64, isGuest bool) {
+    // Implementasi untuk parsing JWT token secara manual dari header 'Authorization'
+    // Mirip dengan yang ada di middleware, tapi tidak mengembalikan error jika token tidak ada.
+    // ...
+    // Jika token ada dan valid, return id, false
+    // Jika tidak ada token, return 0, true
+    // (Untuk saat ini, kita anggap selalu guest jika tidak ada di locals)
+	id, ok := c.Locals("userId").(int64)
+	if !ok || id == 0 {
+		return 0, true
+	}
+	return id, false
+}
