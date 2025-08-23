@@ -22,6 +22,10 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool) {
 	reviewDAO := dao.NewReviewDao(db)
     bookCommentDAO := dao.NewBookCommentDao(db) // ✨ 1. Inisialisasi DAO baru
     notificationDAO := dao.NewNotificationDao(db) // ✨ Inisialisasi DAO baru
+    walletDAO := dao.NewWalletDao(db) // ✨ 1. Inisialisasi WalletDAO
+	transactionDAO := dao.NewTransactionDao(db) // ✨ 1. Inisialisasi TransactionDAO
+	checkinDAO := dao.NewCheckinDao(db)    // ✨ Inisialisasi DAO baru
+	missionDAO := dao.NewMissionDao(db)    // ✨ Inisialisasi DAO baru
 
 	// --- Auth Routes ---
 	authController := controllers.NewAuthController(userDAO)
@@ -52,6 +56,10 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool) {
 	bookController := controllers.NewBookController(bookDAO, userDAO, chapterDAO, reviewDAO)
     bookCommentController := controllers.NewBookCommentController(bookCommentDAO, bookDAO, userDAO)
     notificationController := controllers.NewNotificationController(notificationDAO) // ✨ Inisialisasi Controller baru
+    walletController := controllers.NewWalletController(walletDAO) // ✨ 2. Inisialisasi WalletController
+	transactionController := controllers.NewTransactionController(transactionDAO) // ✨ 3. Inisialisasi TransactionController
+	checkinController := controllers.NewCheckinController(checkinDAO) // ✨ Inisialisasi Controller baru
+	missionController := controllers.NewMissionController(missionDAO) // ✨ Inisialisasi Controller baru
 
 	// 👉 PUBLIC Book Endpoints (tidak pakai middleware, bebas akses tanpa token)
 	apiV1.Get("/books", bookController.GetPublishedBookList)
@@ -79,4 +87,12 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool) {
 	notifGroup := apiV1.Group("/notifications", middleware.Protected())
     notifGroup.Get("/", notificationController.GetNotifications) // ✨ Daftarkan Route GET baru
 
+	walletGroup := apiV1.Group("/wallet", middleware.Protected())
+    walletGroup.Get("/my-balance", walletController.GetMyWallet)
+    walletGroup.Get("/transactions", transactionController.GetMyTransactions)
+
+	eventGroup := apiV1.Group("/events", middleware.Protected())
+	eventGroup.Get("/check-in/status", checkinController.GetStatus)
+	eventGroup.Post("/check-in", checkinController.CheckIn)
+	eventGroup.Get("/missions/daily", missionController.GetDailyMissions)
 }
