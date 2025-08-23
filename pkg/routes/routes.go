@@ -20,6 +20,8 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool) {
 	genreDAO := dao.NewGenreDao(db)
 	chapterDAO := dao.NewChapterDao(db) // Inisialisasi ChapterDAO
 	reviewDAO := dao.NewReviewDao(db)
+    bookCommentDAO := dao.NewBookCommentDao(db) // ✨ 1. Inisialisasi DAO baru
+    notificationDAO := dao.NewNotificationDao(db) // ✨ Inisialisasi DAO baru
 
 	// --- Auth Routes ---
 	authController := controllers.NewAuthController(userDAO)
@@ -48,11 +50,15 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool) {
 
 	// --- Book Routes ---
 	bookController := controllers.NewBookController(bookDAO, userDAO, chapterDAO, reviewDAO)
+    bookCommentController := controllers.NewBookCommentController(bookCommentDAO, bookDAO, userDAO)
+    notificationController := controllers.NewNotificationController(notificationDAO) // ✨ Inisialisasi Controller baru
 
 	// 👉 PUBLIC Book Endpoints (tidak pakai middleware, bebas akses tanpa token)
 	apiV1.Get("/books", bookController.GetPublishedBookList)
 	apiV1.Get("/authors/:authorId/books", bookController.GetBooksByAuthor)
 	apiV1.Get("/chapters/:chapterId", controllers.NewChapterController(chapterDAO, bookDAO).GetChapterContent)
+
+	apiV1.Get("/books/:bookId/comments", bookCommentController.GetBookComments)
 
 	// 👉 PROTECTED Book Endpoints (wajib pakai token)
 	bookGroup := apiV1.Group("/books", middleware.Protected())
@@ -63,9 +69,14 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool) {
 	bookGroup.Patch("/:bookId/complete", bookController.CompleteBook)
 	bookGroup.Patch("/:bookId/hold", bookController.HoldBook)
 	bookGroup.Get("/:bookId/detail", bookController.GetMyBookDetail)
+    bookGroup.Post("/:bookId/comments", bookCommentController.CreateBookComment)
 
 	// Chapter creation (Protected, karena di bawah bookGroup)
 	chapterController := controllers.NewChapterController(chapterDAO, bookDAO)
 	bookGroup.Post("/:bookId/chapters", chapterController.CreateChapter)
 	apiV1.Get("/books/:bookId", bookController.GetPublicBookDetail)
+
+	notifGroup := apiV1.Group("/notifications", middleware.Protected())
+    notifGroup.Get("/", notificationController.GetNotifications) // ✨ Daftarkan Route GET baru
+
 }

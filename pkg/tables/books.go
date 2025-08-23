@@ -18,6 +18,20 @@ type Book struct {
     AuthorPenName *string    `json:"authorPenName,omitempty" db:"pen_name"`
 }
 
+type BookComment struct {
+	CommentID       int64      `json:"commentId" db:"comment_id"`
+	BookID          int64      `json:"bookId" db:"book_id"`
+	UserID          int64      `json:"userId" db:"user_id"`
+	CommentText     string     `json:"commentText" db:"comment_text"`
+	ParentCommentID *int64     `json:"parentCommentId,omitempty" db:"parent_comment_id"`
+	CreateDatetime  time.Time  `json:"createDatetime" db:"create_datetime"`
+	UpdateDatetime  *time.Time `json:"updateDatetime,omitempty" db:"update_datetime"`
+
+	// Kolom tambahan untuk response
+	AuthorPenName *string `json:"authorPenName,omitempty" db:"pen_name"`
+	AuthorAvatar  *string `json:"authorAvatar,omitempty" db:"avatar_url"`
+}
+
 // Chapter merepresentasikan data dari tabel 'chapters'.
 type Chapter struct {
 	ChapterID     int64      `json:"chapterId" db:"chapter_id"`
@@ -36,6 +50,7 @@ type Chapter struct {
 // Review merepresentasikan satu ulasan dari pengguna untuk sebuah buku.
 type Review struct {
 	ReviewID       int64      `json:"reviewId" db:"review_id"`
+	BookID         int64      `json:"bookId,omitempty" db:"book_id"` // ✨ DITAMBAHKAN
 	UserID         int64      `json:"userId" db:"user_id"`
 	AuthorPenName  *string    `json:"authorPenName,omitempty" db:"pen_name"`
 	AuthorAvatar   *string    `json:"authorAvatar,omitempty" db:"avatar_url"`
@@ -43,7 +58,6 @@ type Review struct {
 	ReviewText     *string    `json:"reviewText,omitempty" db:"review_text"`
 	CreateDatetime time.Time  `json:"createDatetime" db:"create_datetime"`
 }
-
 
 // BookDetailResponse adalah struktur data yang menyeluruh untuk halaman detail buku.
 type BookDetailResponse struct {
